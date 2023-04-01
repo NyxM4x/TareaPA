@@ -1,0 +1,96 @@
+using System;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+
+namespace ConsoleApp3
+{
+    public class Game : GameWindow
+    {
+        private const int vertexPositionLocation = 0;
+        private float[] vertices =
+        {
+            -0.5f, -0.5f, 0.0f,
+             0.5f, -0.5f, 0.0f,
+             0.0f,  0.5f, 0.0f
+        };
+
+        private int vertexBufferObject;
+        private int vertexArrayObject;
+        private int shaderProgram;
+
+        public Game(int width, int height, string title) : base(GameWindowSettings.Default, new NativeWindowSettings() { Size = (width, height), Title = title }) { }
+
+        protected override void OnLoad()
+        {
+            GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+
+            // Compile the vertex and fragment shaders
+            string vertexShaderSource = @"
+                #version 330 core
+                layout (location = 0) in vec3 aPosition;
+                void main()
+                {
+                    gl_Position = vec4(aPosition, 1.0);
+                }";
+
+            string fragmentShaderSource = @"
+                #version 330 core
+                out vec4 FragColor;
+                void main()
+                {
+                    FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+                }";
+
+            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
+            GL.ShaderSource(vertexShader, vertexShaderSource);
+            GL.CompileShader(vertexShader);
+
+            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(fragmentShader, fragmentShaderSource);
+            GL.CompileShader(fragmentShader);
+
+            // Link the shader program
+            shaderProgram = GL.CreateProgram();
+            GL.AttachShader(shaderProgram, vertexShader);
+            GL.AttachShader(shaderProgram, fragmentShader);
+            GL.LinkProgram(shaderProgram);
+
+            // Create the vertex buffer object
+            vertexBufferObject = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+
+            // Create the vertex array object
+            vertexArrayObject = GL.GenVertexArray();
+            GL.BindVertexArray(vertexArrayObject);
+
+            GL.VertexAttribPointer(vertexPositionLocation, 3, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray(vertexPositionLocation);
+        }
+
+        protected override void OnRenderFrame(FrameEventArgs e)
+        {
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.UseProgram(shaderProgram);
+            GL.BindVertexArray(vertexArrayObject);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+
+            SwapBuffers();
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // This line creates a new instance, and wraps the instance in a using statement so it's automatically disposed once we've exited the block.
+            using (Game game = new Game(800, 600, "OpenTK Triangle Example"))
+            {
+                game.Run();
+            }
+        }
+    }
+}
